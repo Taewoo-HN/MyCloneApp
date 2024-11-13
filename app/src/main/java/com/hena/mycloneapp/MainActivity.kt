@@ -6,6 +6,8 @@ import android.app.AlertDialog
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
 import android.location.LocationManager
 
 import android.os.Bundle
@@ -17,6 +19,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.hena.mycloneapp.databinding.ActivityMainBinding
+import java.io.IOException
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -145,13 +149,39 @@ class MainActivity : AppCompatActivity() {
         val latitude: Double? = locationProvider.getLocationLatitude()
         val longtitude: Double? = locationProvider.getLocationLongtitude()
 
-        if (latitude != null || longtitude != null) {
+        if (latitude != null && longtitude != null) {
             // get currentLocation check && UI update
-            
+            val address = getCurrentAddress(latitude, longtitude)
+            address?.let{
+                binding.tvLocationTitle.text = "${it.thoroughfare}"
+                binding.tvLocationSub.text = "${it.countryName}"
+            }
             // get micro-dust && UI update
         } else {
             Toast.makeText(this, R.string.no_langlongtude, Toast.LENGTH_LONG).show()
         }
     }
+
+    private fun getCurrentAddress(latitude: Double, longtitude: Double): Address? {
+        val getZipCode = Geocoder(this, Locale.getDefault())
+        val addresses: List<Address>
+
+        addresses = try {
+            getZipCode.getFromLocation(latitude, longtitude, 7)
+        } catch (ioException: IOException) {
+            Toast.makeText(this, R.string.cant_use_geocoder, Toast.LENGTH_LONG).show()
+            return null
+        } catch (illegalArugmentException: IllegalArgumentException) {
+            Toast.makeText(this, R.string.wrong_location, Toast.LENGTH_LONG).show()
+            return null
+        }!!
+
+        if (addresses == null || addresses.size == 0) {
+            Toast.makeText(this, "주소가 발견되지 않았습니다.", Toast.LENGTH_LONG).show()
+            return null
+        }
+        return addresses[0]
+    }
+
 
 }
